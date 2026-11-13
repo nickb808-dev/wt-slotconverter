@@ -1,53 +1,73 @@
 # wtslot Converter
 
-A static web page that turns wavetable WAVs (single-cycle frames, e.g. Serum/Surge
-tables or 2048-sample transwaves) into Waldorf M 16-bit user wavetables:
-`wtslot00.wav`–`wtslot31.wav`, 64 waves × 256 samples, plain 44-byte WAV header.
+An offline tool that turns wavetable WAVs (single-cycle frames, e.g. Serum/Surge tables
+or 2048-sample transwaves) into Waldorf M 16-bit user wavetables:
+`wtslot00.wav`–`wtslot31.wav`, 64 waves × 256 samples.
 
-Everything runs in the browser and completely offline. There is no server code and no upload.
+It is one HTML file that runs in your web browser with no internet connection. Nothing
+is installed, nothing is uploaded, and the page cannot send data anywhere.
 
-## Files
+## Using it
 
-- `index.html`, `style.css`, `app.js` — the whole site, no dependencies or build step
-- `_headers` — security headers for Cloudflare Pages / Netlify (GitHub Pages ignores it;
-  the same CSP is also set in a `<meta>` tag)
+1. Open `wtslot-converter-offline.html` in a current web browser (double-click it).
+   Tested in Firefox; it uses only standard features every current browser has.
+2. Drop in WAV files, or click **choose files**. Mono or stereo; 8/16/24/32-bit or float.
+3. Check the frame size. **Auto** reads the tag in Serum and Surge tables and otherwise
+   assumes 2048 samples per frame. A "samples left over" warning means it's probably wrong.
+4. Give each table a slot (00–31), then **Download** each one or **Download all (.zip)**.
 
-## Offline copy to share
+### Loading them on the M
+
+1. Copy the `wtslotNN.wav` files to the **root** of the M's SD card.
+2. On the M, set **UWT Slot** to the file's number and **Skip** to **1**.
+3. In the SD Card utility, run **Import 16bit User WT (from SD)**. Repeat for each slot.
+
+**Check the slot number first.** On firmware 1.11, importing a slot that has no matching
+file on the card freezes the M until it is power-cycled.
+
+## Privacy and security
+
+- The tool runs entirely on your computer. It has no server, account, analytics or
+  third-party code, and needs no network.
+- Its Content-Security-Policy allows only the page's own built-in script and stylesheet
+  (pinned by SHA-256 hash) and blocks every network request (`connect-src 'none'`), so
+  even a bug or a malicious WAV could not send data out.
+- WAV parsing is bounds-checked and capped at 128 MB per file. A malformed file only
+  shows an error on its own row.
+
+## How the conversion works
+
+The file is split into frames at the frame size. 64 positions are spread evenly across
+the frames, blending neighbouring frames where a position falls between two, so short
+tables are interpolated and long ones thinned out. Each wave is resampled to 256 samples
+from its harmonics 1–127 (no aliasing; DC removed), and the whole table is normalized to
+−0.3 dBFS so the waves keep their relative levels.
+
+The output always uses a plain 44-byte WAV header, because the M (host FW 1.11) reads
+the audio from byte 44 without parsing the header. Output matches
+`waldorf-m-fw/tools/fizmo_to_uwt.py` sample for sample.
+
+## Maintaining it
+
+The source is three files; `wtslot-converter-offline.html` is built from them.
+
+- `index.html`, `style.css`, `app.js` — the page, with no dependencies
+- `build-offline.py` — inlines the CSS and JS into the single file and pins them in the
+  Content-Security-Policy by SHA-256 hash (browsers disagree about `'self'` for pages
+  opened from disk, so the source files' policy can't be used as is)
+
+After changing any source file, rebuild and commit the result:
 
 ```bash
 python3 build-offline.py
 ```
 
-writes `wtslot-converter-offline.html`: one self-contained file that runs when opened
-straight from disk. Its CSP allows the inlined style and script by SHA-256 hash rather
-than `'self'`, which browsers handle inconsistently for `file://` pages. Rebuild it
-after any change to the three source files.
-
-## Run locally
+To try the source files directly, serve the folder locally and open
+http://127.0.0.1:8765/:
 
 ```bash
 python3 -m http.server 8765 --bind 127.0.0.1
 ```
 
-then open http://127.0.0.1:8765/.
-
-## Security model
-
-- No backend: there is nothing on the server to attack beyond the static host itself.
-- The Content-Security-Policy allows only this site's own script and stylesheet, and
-  `connect-src 'none'` stops the page from sending anything anywhere, even if a bug
-  or a hostile WAV tried to.
-- WAV parsing is bounds-checked and capped at 128 MB per file; a malformed file only
-  produces an error on that row, in the visitor's own tab.
-- No third-party fonts, analytics or CDNs, so visitors aren't tracked.
-
-## Conversion
-
-Frames are split at the frame size (Auto reads Serum `clm ` / Surge `srge` tags, else
-2048), 64 positions are spread evenly across them with linear blending between
-neighbours, and each wave is resampled to 256 samples keeping harmonics 1–127 (DC
-removed). The table is normalized to −0.3 dBFS. Output matches
-`waldorf-m-fw/tools/fizmo_to_uwt.py` sample for sample.
-
-The M (host FW 1.11) reads the file from byte 44 without parsing the header, and a
-missing `wtslotNN.wav` on import hangs the unit until power-cycled.
+Only distribute `wtslot-converter-offline.html`. Don't bundle wavetables with it; users
+bring their own.
