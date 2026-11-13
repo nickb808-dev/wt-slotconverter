@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<title>wtslot Converter</title>
+<meta name="description" content="Turn wavetable WAVs into Waldorf M 16-bit user wavetables (wtslotNN.wav). Runs in your browser; files never leave your computer.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="wrap">
+  <header class="head">
+    <p class="eyebrow">Waldorf M · user wavetables</p>
+    <h1>wtslot Converter</h1>
+    <p class="lede">Drop in wavetable WAV files and get <code>wtslot00.wav</code>–<code>wtslot31.wav</code>, ready for the M's SD card: 64 waves of 256 samples, 16-bit.</p>
+    <p class="private"><span class="dot" aria-hidden="true"></span>Runs entirely in your browser. Your files are never uploaded.</p>
+  </header>
+
+  <section class="drop" id="drop" tabindex="0" aria-label="Add wavetable WAV files">
+    <input type="file" id="file" accept=".wav,audio/wav,audio/x-wav" multiple hidden>
+    <div class="drop-inner">
+      <strong>Drop WAV files here</strong>
+      <span>or <button type="button" class="linkbtn" id="pick">choose files</button></span>
+      <small>Mono or stereo · 8/16/24/32-bit or float · one cycle per frame</small>
+    </div>
+  </section>
+
+  <section class="settings" aria-label="Conversion settings">
+    <label for="frame">Frame size</label>
+    <select id="frame">
+      <option value="auto" selected>Auto (file tag, else 2048)</option>
+      <option value="256">256</option>
+      <option value="512">512</option>
+      <option value="1024">1024</option>
+      <option value="2048">2048</option>
+      <option value="4096">4096</option>
+    </select>
+    <span class="hint">Samples per single-cycle frame in the source. Serum and Surge tables carry a tag that Auto reads.</span>
+  </section>
+
+  <section aria-labelledby="tables-h">
+    <div class="list-head">
+      <h2 id="tables-h">Tables</h2>
+      <div class="actions">
+        <button type="button" id="clear" class="ghost">Clear all</button>
+        <button type="button" id="zip" class="primary">Download all (.zip)</button>
+      </div>
+    </div>
+    <p class="status" id="status" role="status"></p>
+    <ul class="tables" id="tables"></ul>
+  </section>
+
+  <section class="howto" aria-labelledby="howto-h">
+    <h2 id="howto-h">Loading them on the M</h2>
+    <ol>
+      <li>Copy the <code>wtslotNN.wav</code> files to the <strong>root</strong> of the M's SD card.</li>
+      <li>On the M, set <strong>UWT Slot</strong> to the file's number and <strong>Skip</strong> to <strong>1</strong>.</li>
+      <li>In the SD Card utility, run <strong>Import 16bit User WT (from SD)</strong>. Repeat for each slot.</li>
+    </ol>
+    <p class="warn"><strong>Check the slot number first.</strong> On firmware 1.11, importing a slot with no matching file on the card freezes the M until you power-cycle it.</p>
+    <details>
+      <summary>What the converter does</summary>
+      <p>It splits the file into frames, picks 64 evenly spaced positions across them (blending neighbouring frames, so short tables are interpolated and long ones thinned), and resamples each wave to 256 samples, keeping harmonics 1–127. It removes DC and normalizes the whole table to −0.3 dBFS, so the waves keep their levels relative to each other.</p>
+      <p>The M reads the file blindly from byte 44, so the output always uses a plain 44-byte WAV header.</p>
+    </details>
+  </section>
+
+  <footer class="foot">
+    <p>Unofficial tool, not affiliated with Waldorf. Bring your own wavetables, and respect their licences.</p>
+  </footer>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
