@@ -4,7 +4,7 @@ A static web page that turns wavetable WAVs (single-cycle frames, e.g. Serum/Sur
 tables or 2048-sample transwaves) into Waldorf M 16-bit user wavetables:
 `wtslot00.wav`–`wtslot31.wav`, 64 waves × 256 samples, plain 44-byte WAV header.
 
-Everything runs in the visitor's browser. There is no server code and no upload.
+Everything runs in the browser and completely offline. There is no server code and no upload.
 
 ## Files
 
